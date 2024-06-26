@@ -1,6 +1,6 @@
 # External
 from __future__ import annotations
-import random, base64
+import random, base64, hashlib
 # internal
 from AdvancedEncryptionStandard.Cipher.AESoperations import *
 from AdvancedEncryptionStandard.Cipher.AESstatic import *
@@ -103,20 +103,26 @@ class AESCrypto(AESKey):
         if not isinstance(data, bytes):
             error_message = 'Invalid data type input.'
             raise ValueError(error_message)
-        
+                
         # 填充明文,使其長度為16的倍數
         padd_len = 16 - (len(data) % 16) if len(data) % 16 else 0
         padd_data = data
         for _ in range(padd_len):
             padd_data += b'\x00'
-        
+                       
         # 分割block
         block_list = []
         for i in range(0, len(padd_data), 16):
             block_list.append(padd_data[i:i+16])
 
+        # 將明文的長度以及hash值寫入最前面
+        hash_value = '0x' + hashlib.sha256(data).hexdigest()
+        hash_value = Converter.hex_to_bytes(hash_value)
+        
+        check_sum = padd_len.to_bytes(length=1, byteorder='big') + hash_value
+    
         # 加密所有的block
-        cipher_text = b''
+        cipher_text = check_sum
         for block in block_list:
             index = 0
 
@@ -146,7 +152,7 @@ class AESCrypto(AESKey):
             # 把此block的密文寫入結果
             for word in word_list:
                 cipher_text += word
-
+        
         cipher_text = base64.b64encode(cipher_text)
         return cipher_text
 
@@ -157,10 +163,14 @@ class AESCrypto(AESKey):
             raise ValueError(error_message)
         padd_data = base64.b64decode(padd_data)
 
+        # 分割檢查碼
+        check_sum = padd_data[:33]
+        cipher_text = padd_data[33:]
+        
         # 分割block
         block_list = []
-        for i in range(0, len(padd_data), 16):
-            block_list.append(padd_data[i:i+16])
+        for i in range(0, len(cipher_text), 16):
+            block_list.append(cipher_text[i:i+16])
         
         # 解密所有的block
         text = b''
@@ -194,16 +204,14 @@ class AESCrypto(AESKey):
             for word in word_list:
                 text += word
         
-        print(text)
+        # 資料檢查
+        padd_len = check_sum[0]
+        hash_value = Converter.bytes_to_hex(check_sum[1:])[2:]
         
+        text = text[:-padd_len]  # 去除padding
         
-
-            
-            
-            
+        if hash_value != hashlib.sha256(text).hexdigest():  # 檢查明文hash value
+            error_message = 'Decrypt failed.'
+            raise ValueError(error_message)
         
-        
-        
-
-
-
+        return text

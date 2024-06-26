@@ -17,7 +17,6 @@ __all__ = [
 
 
 
-
 def xor_bytes(data1: bytes, data2: bytes) -> bytes:
     if len(data1) != len(data2):
         raise ValueError("Input bytes must have the same length")
@@ -124,6 +123,7 @@ def inv_shift_rows(word_list: list[bytes]) -> None:
 
 
 def inv_mix_columns(word_list: list[bytes]) -> None:
+    # 真的看不懂，透過ghatGPT生成的,反正結果有檢查是對的
     def gmul(a, b):
         """Galois Field (256) Multiplication of two Bytes"""
         p = 0
