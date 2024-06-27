@@ -36,8 +36,8 @@ def hex_to_bytes(hex_str: str) -> bytes:
     
     try:
         byte_data = bytes.fromhex(hex_str)
-    except ValueError as e:
-        error_message = "Invalid hex string: {hex_str}".format(hex_str)
+    except ValueError:
+        error_message = "Invalid hex string: {}".format(hex_str)
         raise ValueError(error_message)
     
     return byte_data

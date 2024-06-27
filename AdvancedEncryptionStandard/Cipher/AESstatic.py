@@ -21,7 +21,6 @@ Sbox = [
     137,13,191,230,66,104,65,153,45,15,176,84,187,22
 ]
 
-#SBOX = {i.to_bytes(length=1, byteorder='big'): ele.to_bytes(length=1, byteorder='big') for i, ele in enumerate(Sbox)}
 SBOX = {i: ele.to_bytes(length=1, byteorder='big') for i, ele in enumerate(Sbox)}
 
 INVERSE_SBOX = {ele: i.to_bytes(length=1, byteorder='big') for i, ele in enumerate(Sbox)}

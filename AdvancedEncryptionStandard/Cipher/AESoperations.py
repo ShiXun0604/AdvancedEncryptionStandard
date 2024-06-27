@@ -67,7 +67,7 @@ def mix_columns(word_list: list[bytes]) -> None:
     def gmul(a, b):
         """Galois Field (256) Multiplication of two Bytes"""
         p = 0
-        for counter in range(8):
+        for _ in range(8):
             if b & 1:
                 p ^= a
             carry = a & 0x80
@@ -127,7 +127,7 @@ def inv_mix_columns(word_list: list[bytes]) -> None:
     def gmul(a, b):
         """Galois Field (256) Multiplication of two Bytes"""
         p = 0
-        for counter in range(8):
+        for _ in range(8):
             if b & 1:
                 p ^= a
             carry = a & 0x80

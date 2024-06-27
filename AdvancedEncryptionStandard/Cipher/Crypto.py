@@ -22,13 +22,13 @@ class AESKey():
     @property
     def keylen(self) -> int:
         if not self.key:
-            return None
+            return 0
         else:
             return len(self.key) * 8
     
 
     @staticmethod
-    def generate_key(keylen: int = 256) -> str:
+    def generate_key(keylen: int = 256) -> AESKey:
         if keylen not in VALID_KEYLEN:
             error_message = 'Not support key length.'
             raise ValueError(error_message)
@@ -39,7 +39,7 @@ class AESKey():
     
 
     # 符號參考維基百科 https://en.wikipedia.org/wiki/AES_key_schedule
-    def gen_round_key(self) -> bytes:
+    def gen_round_key(self) -> list[bytes]:
         # 偵錯
         if self.keylen not in VALID_KEYLEN:
             error_message = 'Not support key length.'
