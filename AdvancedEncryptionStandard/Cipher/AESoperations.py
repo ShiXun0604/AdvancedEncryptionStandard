@@ -1,4 +1,4 @@
-from AdvancedEncryptionStandard.Cipher.AESstatic import *
+from AdvancedEncryptionStandard.Cipher.AESstatic import SBOX, INVERSE_SBOX
 
 
 

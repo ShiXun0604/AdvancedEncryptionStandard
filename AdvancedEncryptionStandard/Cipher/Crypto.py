@@ -2,9 +2,10 @@
 from __future__ import annotations
 import random, base64, hashlib
 # internal
-from AdvancedEncryptionStandard.Cipher.AESoperations import *
-from AdvancedEncryptionStandard.Cipher.AESstatic import *
+from AdvancedEncryptionStandard.Cipher import AESoperations as Aops
+from AdvancedEncryptionStandard.Cipher.AESstatic import RCON, VALID_KEYLEN
 from AdvancedEncryptionStandard.IO import Converter
+from AdvancedEncryptionStandard.IO import Error as Error
 
 
 
@@ -13,7 +14,7 @@ __all__ = ['AESKey', 'AESCrypto']
 
 
 class AESKey():
-    def __init__(self, key: bytes = None) -> None:
+    def __init__(self, key: bytes = None) -> None:        
         self.key = key
         self.round_key = self.gen_round_key() if key else None
 
@@ -39,6 +40,11 @@ class AESKey():
 
     # 符號參考維基百科 https://en.wikipedia.org/wiki/AES_key_schedule
     def gen_round_key(self) -> bytes:
+        # 偵錯
+        if self.keylen not in VALID_KEYLEN:
+            error_message = 'Not support key length.'
+            raise ValueError(error_message)
+        
         # 拆分key
         K = []
         for i in range(0, int(self.keylen/8), 4):
@@ -56,15 +62,15 @@ class AESKey():
                 word = K[i]
             elif i % N == 0:
                 a = W[i-N]
-                b = sub_word(rot_word(W[i-1]))
+                b = Aops.sub_word(Aops.rot_word(W[i-1]))
                 c = RCON[int(i/N)]
-                word = xor_bytes(xor_bytes(a, b), c)
+                word = Aops.xor_bytes(Aops.xor_bytes(a, b), c)
             elif N > 6 and i % N == 4:
                 a = W[i-N]
-                b = sub_word(W[i-1])
-                word = xor_bytes(a, b)
+                b = Aops.sub_word(W[i-1])
+                word = Aops.xor_bytes(a, b)
             else:
-                word = xor_bytes(W[i-N], W[i-1])
+                word = Aops.xor_bytes(W[i-N], W[i-1])
 
             W.append(word)
 
@@ -73,14 +79,18 @@ class AESKey():
         
 
     def extract_key(self) -> bytes:
-        key = self.key
-        hex_key = Converter.bytes_to_hex(key)
+        if not self.key:
+            error_message = 'No AES key import/generate in class.'
+            raise Error.KeyExtractionError(error_message)
+
+        hex_key = Converter.bytes_to_hex(self.key)
 
         ext_str = b'-----BEGIN AES KEY-----' + b'\n'
         ext_str += hex_key.encode() + b'\n-----END AES KEY-----'
 
         return ext_str
     
+
     def import_key(self, data: bytes) -> None:
         data_list = data.decode().split('\n')
         bytes_key = Converter.hex_to_bytes(data_list[1])
@@ -102,7 +112,7 @@ class AESCrypto(AESKey):
     def encrypt(self, data: bytes) -> bytes:
         if not isinstance(data, bytes):
             error_message = 'Invalid data type input.'
-            raise ValueError(error_message)
+            raise TypeError(error_message)
                 
         # 填充明文,使其長度為16的倍數
         padd_len = 16 - (len(data) % 16) if len(data) % 16 else 0
@@ -132,22 +142,22 @@ class AESCrypto(AESKey):
                 word_list.append(block[i:i+4])
 
             # 初始輪
-            add_round_key(word_list, self.round_key[index:index+4])
+            Aops.add_round_key(word_list, self.round_key[index:index+4])
             index += 4
             
             # 中間輪
             iter_time = {128: 9, 192: 11, 256:13}
             for i in range(iter_time[self.keylen]):
-                sub_bytes(word_list)
-                shift_rows(word_list)
-                mix_columns(word_list)
-                add_round_key(word_list, self.round_key[index:index+4])
+                Aops.sub_bytes(word_list)
+                Aops.shift_rows(word_list)
+                Aops.mix_columns(word_list)
+                Aops.add_round_key(word_list, self.round_key[index:index+4])
                 index += 4
             
             # 最終輪
-            sub_bytes(word_list)
-            shift_rows(word_list)
-            add_round_key(word_list, self.round_key[index:index+4])
+            Aops.sub_bytes(word_list)
+            Aops.shift_rows(word_list)
+            Aops.add_round_key(word_list, self.round_key[index:index+4])
             
             # 把此block的密文寫入結果
             for word in word_list:
@@ -158,60 +168,70 @@ class AESCrypto(AESKey):
 
 
     def decrypt(self, padd_data: bytes) -> bytes:
+        # 除錯:輸入的type不正確
         if not isinstance(padd_data, bytes):
             error_message = 'Invalid data type input.'
-            raise ValueError(error_message)
-        padd_data = base64.b64decode(padd_data)
-
-        # 分割檢查碼
-        check_sum = padd_data[:33]
-        cipher_text = padd_data[33:]
+            raise TypeError(error_message)
+        # 除錯:class內沒有金鑰
+        if not self.key:
+            error_message = 'Decryption requires key. No key imported.'
+            raise Error.NoKeyError(error_message)
         
-        # 分割block
-        block_list = []
-        for i in range(0, len(cipher_text), 16):
-            block_list.append(cipher_text[i:i+16])
-        
-        # 解密所有的block
-        text = b''
-        for block in block_list:
-            index = len(self.round_key) - 4
-
-            # 先把block拆成4x4大小矩陣
-            word_list = []
-            for i in range(0, 16, 4):
-                word_list.append(block[i:i+4])
+        try:
+            padd_data = base64.b64decode(padd_data)
+            # 分割檢查碼
+            check_sum = padd_data[:33]
+            cipher_text = padd_data[33:]
             
-            # 初始輪
-            add_round_key(word_list, self.round_key[index:index+4])
-            index -= 4
-            inv_shift_rows(word_list)
-            inv_sub_bytes(word_list)
+            # 分割block
+            block_list = []
+            for i in range(0, len(cipher_text), 16):
+                block_list.append(cipher_text[i:i+16])
+            
+            # 解密所有的block
+            text = b''
+            for block in block_list:
+                index = len(self.round_key) - 4
 
-            # 中間輪
-            iter_time = {128: 9, 192: 11, 256:13}
-            for i in range(iter_time[self.keylen]):
-                add_round_key(word_list, self.round_key[index:index+4])
+                # 先把block拆成4x4大小矩陣
+                word_list = []
+                for i in range(0, 16, 4):
+                    word_list.append(block[i:i+4])
+                
+                # 初始輪
+                Aops.add_round_key(word_list, self.round_key[index:index+4])
                 index -= 4
-                inv_mix_columns(word_list)
-                inv_shift_rows(word_list)
-                inv_sub_bytes(word_list)
-            
-            # 最終輪
-            add_round_key(word_list, self.round_key[index:index+4])
+                Aops.inv_shift_rows(word_list)
+                Aops.inv_sub_bytes(word_list)
 
-            # 把此block的明文寫入結果
-            for word in word_list:
-                text += word
+                # 中間輪
+                iter_time = {128: 9, 192: 11, 256:13}
+                for i in range(iter_time[self.keylen]):
+                    Aops.add_round_key(word_list, self.round_key[index:index+4])
+                    index -= 4
+                    Aops.inv_mix_columns(word_list)
+                    Aops.inv_shift_rows(word_list)
+                    Aops.inv_sub_bytes(word_list)
+                
+                # 最終輪
+                Aops.add_round_key(word_list, self.round_key[index:index+4])
+
+                # 把此block的明文寫入結果
+                for word in word_list:
+                    text += word
+        except:
+            error_message = 'Decrypt failed.'
+            raise Error.DecryptionError(error_message)
         
         # 資料檢查
         padd_len = check_sum[0]
         hash_value = Converter.bytes_to_hex(check_sum[1:])[2:]
         
         text = text[:-padd_len]  # 去除padding
-        
-        if hash_value != hashlib.sha256(text).hexdigest():  # 檢查明文hash value
+
+        # 檢查hash value是否匹配
+        if hash_value != hashlib.sha256(text).hexdigest():  
             error_message = 'Decrypt failed.'
-            raise ValueError(error_message)
+            raise Error.DecryptionError(error_message)
         
         return text

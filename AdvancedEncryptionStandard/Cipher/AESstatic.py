@@ -26,8 +26,7 @@ SBOX = {i: ele.to_bytes(length=1, byteorder='big') for i, ele in enumerate(Sbox)
 
 INVERSE_SBOX = {ele: i.to_bytes(length=1, byteorder='big') for i, ele in enumerate(Sbox)}
 
-RCON = [None, b'\x01', b'\x02', b'\x04', b'\x08', b'\x10', b'\x20', b'\x40', b'\x80', b'\x1b', b'\x36']
-for i in range(1, len(RCON)):
-    RCON[i] = RCON[i] + b'\x00\x00\x00'
+RCON = [None, b'\x01\x00\x00\x00', b'\x02\x00\x00\x00', b'\x04\x00\x00\x00', b'\x08\x00\x00\x00', b'\x10\x00\x00\x00', 
+        b'\x20\x00\x00\x00', b'\x40\x00\x00\x00', b'\x80\x00\x00\x00', b'\x1b\x00\x00\x00', b'\x36\x00\x00\x00']
 
 VALID_KEYLEN = [128, 192, 256]

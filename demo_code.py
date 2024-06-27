@@ -1,13 +1,29 @@
+import time
 from AdvancedEncryptionStandard.Cipher import Crypto
 from AdvancedEncryptionStandard.IO import Converter
 # example key:0x2b7e151628aed2a6abf7158809cf4f3c
 
 
-def key_generation_demo():
-    AES_key = Crypto.AESKey.generate_key(192)
 
-    with open('key.pem', 'wb') as f:
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        exec_time = time.time() - start_time
+
+        print(exec_time)
+
+        return result
+    return wrapper
+
+
+
+def key_generation_demo():
+    AES_key = Crypto.AESKey.generate_key(256)
+
+    with open('k1.pem', 'wb') as f:
         f.write(AES_key.extract_key())
+
 
 
 def encryption_demo():
@@ -15,12 +31,14 @@ def encryption_demo():
     crypto_obj = Crypto.AESCrypto()
 
     # 載入金鑰
-    with open('key.pem', 'rb') as f:
+    with open('k1.pem', 'rb') as f:
         key = f.read()
     crypto_obj.import_key(key)
 
     # 加密訊息
-    data = '嗨你好我是ShiXun,我正在練習寫程式。'.encode()
+    data = 'sddas'
+    print(data)
+    data = data.encode()
     cipher_text = crypto_obj.encrypt(data)
 
     # 儲存密文
@@ -33,7 +51,7 @@ def decryption_demo():
     crypto_obj = Crypto.AESCrypto()
 
     # 載入金鑰
-    with open('key.pem', 'rb') as f:
+    with open('k1.pem', 'rb') as f:
         key = f.read()
     crypto_obj.import_key(key)
 
