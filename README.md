@@ -1,7 +1,8 @@
 ##  簡介
 * 此repository沒有使用任何外部crypt library實現AES加密算法，金鑰長度可接受128、192、256bits。
 * 通過solar qube源碼掃描，security報警數=0。
-  
+* 明明有library，為甚麼要從頭開始寫呢?因為閒閒沒事做(X別人的library在做源碼掃描時總是很多問題跑出來，改別人300個問題不如從頭開始QQ。
+
 ## 注意事項
 * 開發版本：python 3.9.1
 * 外部引用：\_\_future\_\_、random、hashlib、base64
