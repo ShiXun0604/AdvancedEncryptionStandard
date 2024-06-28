@@ -1,6 +1,5 @@
 import time
 from AdvancedEncryptionStandard.Cipher import Crypto
-from AdvancedEncryptionStandard.IO import Converter
 # example key:0x2b7e151628aed2a6abf7158809cf4f3c
 
 
