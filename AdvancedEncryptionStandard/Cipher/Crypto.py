@@ -35,6 +35,10 @@ class AESKey():
         
         bin_key = ''.join(str(random.randint(0, 1)) for _ in range(keylen))
         bytes_key = Converter.binary_to_bytes(bin_key)
+        while len(bytes_key)*8 != keylen:
+            bin_key = ''.join(str(random.randint(0, 1)) for _ in range(keylen))
+            bytes_key = Converter.binary_to_bytes(bin_key)
+            
         return AESKey(bytes_key)
     
 
